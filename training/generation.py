@@ -14,6 +14,9 @@ from transformers import (
     GPT2Config,
     GPT2LMHeadModel,
     GPT2Tokenizer,
+    BartConfig,
+    BartTokenizer,
+    BartForConditionalGeneration
 )
 
 from training.gen_ans_to_list import aggregate_predictions
@@ -29,17 +32,18 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 MODEL_CLASSES = {
-    "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer)
+    "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
+    "bart": (BartConfig, BartForConditionalGeneration, BartTokenizer)
 }
 
 
 class OpenPIGPT2Predictor:
-
     def __init__(self, model_path: str, stop_token: str = '<|endoftext|>'):
         self.stop_token = stop_token
-        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')  # Fixed GPT2 tokenizer.
+        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')  # Fixed GPT2 tokenizer.
+        self.tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
         self.tokenizer.add_special_tokens({"sep_token": "[SEP]"})
-        self.model = GPT2LMHeadModel.from_pretrained(model_path)
+        self.model = BartForConditionalGeneration.from_pretrained(model_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.model.eval()
