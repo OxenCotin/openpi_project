@@ -1,11 +1,15 @@
 import json
-import os
+from typing import List, Tuple
 
-import spacy
-import textacy
 import requests
+import torch
 
-from typing import List, Sequence
+from transformers import BertTokenizer, BertModel
+from transformers import logging
+
+from torch import functional as F
+
+logger = logging.get_logger()
 
 CONCEPT_NET_QUERY_HEADER = "http://api.conceptnet.io/c/en/"
 
@@ -47,6 +51,11 @@ relation_to_text = {
 Select 'relevant' entities
 """
 
+model = BertModel.from_pretrained('bert-base-uncased', output_hidden_states=True)
+logger.info("Loaded BERT model")
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+logger.info(f"Loaded BERT tokenizer")
+
 
 def query_conceptnet(word: str, attributes: List[str] = None) -> json:
     return requests.get(CONCEPT_NET_QUERY_HEADER + word).json()
@@ -70,24 +79,27 @@ def format_cpnet_query(text: str) -> str:
     return text.replace(' ', '_')
 
 
-def get_closest_entities(entities: List[str], max_entities: int = 20, threshhold: float = 0) -> List[str]:
+def get_closest_entities(entities: List[str], context: str, max_entities: int = 20, threshhold: float = 0) -> List[str]:
     """
     Iterates through a list of entities in context, looks up one-hop relations in conceptnet, and gets the entities
     at the other end of the relations that are 'most relevant'
 
+    @param context: context entities appear in
     @param threshhold: threshhold of cpnet weight of entities to consider
     @type max_entities: max number of entities to track
-    @param entities: words present in the text to look up in conceptnet
+    @param entities: tuples of entities present in the text to look up in conceptnet along with the context in which they appear
 
     @return list of entities most relevant to the procedural text,
     """
     possible_ents = []
+    cosine = torch.nn.CosineSimilarity(dim=0)
 
     # For each entity, look up 'strong' relations in conceptnet. Add all above a certain threshhold to consideration\
     # import pdb
     # pdb.set_trace()
     for entity in entities:
         triples = query_conceptnet(format_cpnet_query(entity))['edges']
+        embedded_context = embed_concept_sentence(context).view(-1)
         for triple in triples:
             # only look at relations we deem relevant and english triples
             if triple['rel']['@id'] not in interested_relations:
@@ -102,23 +114,62 @@ def get_closest_entities(entities: List[str], max_entities: int = 20, threshhold
             concept = start if not start == entity else end
             text = format_cpnet_text(triple.get('surfaceText')) if triple.get('surfaceText') else \
                 start + " " + relation_to_text[triple['rel']['@id']] + " " + end
+
             weight = triple['weight']
 
-            possible_ents.append((concept, text, weight))
+            # Simple heuristic for scoring the entities: more 'relevant' if concept triple is similar to original
+            # context
+            embedding = embed_concept_sentence(text, model)
+            score = cosine(embedding, embedded_context).value
 
-    # TODO: Embed triples and rank in context
-    return sorted(possible_ents, key=lambda x: x[2])
+            possible_ents.append((concept, text, score, embedding))
+
+    return sorted(possible_ents, key=lambda x: x[2], reverse=True)
 
 
-def embed_concept_triple(triple: str, embedding):
+def embed_concept_sentence(sentence: str, model=model, embedder: str = 'BERT'):
     """
 
-    @param triple: concept_net triple to embed
-    @param embedding:
+    @param model:
+    @param embedder: model to use to embed triple text, defaults to pretrained bert
+    @param sentence: concept_net triple to embed
     @return:
     """
-    pass
+    if embedder == "BERT":
+        text, tokens, segments = bert_text_preparation(sentence, tokenizer)
+        with torch.no_grad():
+            outputs = model(tokens, segments)
+
+            # first hidden state is input state
+            hidden_states = outputs[2][1:]
+
+        token_embeddings = hidden_states[-1]
+        token_embeddings = torch.squeeze(token_embeddings, dim=0)
+        list_token_embeddings = [token_embed.tolist() for token_embed in token_embeddings]
+
+        return torch.mean(token_embeddings, dim=0)
+    else:
+        raise NotImplementedError
+
+
+def bert_text_preparation(text: str, tokenizer: BertTokenizer):
+    marked_text = "[CLS] " + text + " [SEP]"
+    tokenized_text = tokenizer.tokenize(marked_text)
+
+    indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+    segments_ids = [1] * len(indexed_tokens)
+
+    tokens_tensor = torch.tensor([indexed_tokens])
+    segments_tensor = torch.tensor([segments_ids])
+
+    return tokenized_text, tokens_tensor, segments_tensor
 
 
 def json_to_text(trip: json):
     pass
+
+
+sentence = "Knife is a tool"
+embedded = embed_concept_sentence(sentence, model)
+
+print(embedded)

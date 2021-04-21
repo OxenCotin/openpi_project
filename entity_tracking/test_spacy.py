@@ -8,14 +8,13 @@ import requests
 
 from typing import Sequence, List
 import en_core_web_sm
+from entity_selection import get_closest_entities, embed_concept_sentence
 
 PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
 print(PATH_TO_DIRECTORY)
 GPT_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/formatted_for_gpt2/train.jsonl')
 QUESTIONS_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/gold/dev/id_question.jsonl')
 META_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/gold/dev/id_answers_metadata.jsonl')
-
-from entity_selection import get_closest_entities
 
 
 def read_line(input_json, tokenizer, block_size, skip_answer, stop_token='<|endoftext|>'):
@@ -56,9 +55,6 @@ def read_line(input_json, tokenizer, block_size, skip_answer, stop_token='<|endo
 
     return token_ids, token_labels, metadata
 
-def get_embedding(text: str):
-    pass
-
 
 questions = []
 entities = []
@@ -92,20 +88,25 @@ nlp = en_core_web_sm.load()
 #         print(ent.text, ent.start_char, ent.end_char, ent.label)
 
 sent1 = "Squeeze a line of toothpaste onto one side of a soft sponge"
-sent3 = "Vigorously rub the sponge in a circular motion over the entire surface of your headlight. Use a dry, clean rag to wipe away any remaining toothpaste. Repeat every two to four months as needed. Now, what happens?"
+sent3 = "Vigorously rub the sponge in a circular motion over the entire surface of your headlight. Use a dry, " \
+        "clean rag to wipe away any remaining toothpaste. Repeat every two to four months as needed. Now, " \
+        "what happens? "
 sent2 = "the USA supported the South Vietnamese in the Vietnam war"
 sent4 = "Whisking gets rid of any streaks of yolk and whites in the final scramble"
 tnlp = textacy.load_spacy_lang("en_core_web_sm")
-
+#
+# import pdb
+# pdb.set_trace()
 docs = [tnlp(doc) for doc, _ in examples]
+# embedded_docs = [embed_concept_sentence(doc) for doc in docs]
 entities = [tup[1] for tup in examples]
 
 sov_test = [list(textacy.extract.subject_verb_object_triples(doc)) for doc in docs]
 ent_test = [list(textacy.extract.noun_chunks(doc)) for doc in docs]
-
-
-import pdb
-pdb.set_trace()
+#
+#
+# import pdb
+# pdb.set_trace()
 
 ents_sg = [textacy.ke.sgrank(doc, normalize="lemma", include_pos="NOUN") for doc in docs]
 ents_ke = [textacy.ke.textrank(doc, normalize="lemma", include_pos="NOUN") for doc in docs]
@@ -119,9 +120,12 @@ terms1 = [doc._.to_terms_list(entities=True, weighting="count", as_strings=True)
 
 
 only_ents_ke = [[ent[0] for ent in ent_ke] for ent_ke in ents_ke_all]
-inter = [set(tup[0] for tup in get_closest_entities(ent_ke)) for ent_ke in only_ents_ke]
+ents_and_context = list(zip(only_ents_ke, questions))
+all = [get_closest_entities(ent, context) for ent, context in zip(only_ents_ke, questions)]
+inter = [[(ent[0], ent[2]) for ent in ents] for ents in all]
 
 for i, ents in enumerate(inter):
+    ents, context = ents
     ents.update(only_ents_ke[i])
     print(f"Prompt: {docs[i]}")
     print(f"Original entities: {only_ents_ke[i]}")
@@ -129,8 +133,9 @@ for i, ents in enumerate(inter):
     print(f"Correct entities: {entities[i]}")
     print(f"Missing: {entities[i].difference(ents)}")
 
-pdb.set_trace()
+# pdb.set_trace()
 
-embedding_queries = [get_embedding(doc) for doc in docs]
+embedding_queries = [embed_concept_sentence(doc) for doc, _ in examples]
 
+print(embedding_queries)
 

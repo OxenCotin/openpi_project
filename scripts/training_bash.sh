@@ -5,10 +5,10 @@ LR=${2-0.00002} # previously 2e-5
 WEIGHT_DECAY=${3-0.0}
 MAX_LEN=${4-20}
 NUM_EPOCHS=${5-20}
-MODEL_TYPE=${6-gpt2}
-BATCH_SIZE_TRAIN=${3-4}
+MODEL_TYPE=${6-bart}
+BATCH_SIZE_TRAIN=${7-16}
 BATCH_SIZE_EVAL=${8-16}
-BLOCK_SIZE=${9-256}
+BLOCK_SIZE=${9-512}
 
 set -x  # print the command being executed.
 

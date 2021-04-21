@@ -39,7 +39,7 @@ from transformers import (
     WEIGHTS_NAME,
     GPT2Config,
     GPT2Tokenizer,
-    GPT2LMHeadModel, PreTrainedModel, PreTrainedTokenizer)
+    GPT2LMHeadModel, PreTrainedModel, PreTrainedTokenizer, BartForConditionalGeneration, BartConfig, BartTokenizer)
 
 from data_reader import load_and_cache_examples
 from pick_model import evaluate
@@ -49,7 +49,8 @@ logger = logging.getLogger(__name__)
 
 
 MODEL_CLASSES = {
-    "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer)
+    "gpt2": (GPT2Config, GPT2LMHeadModel, GPT2Tokenizer),
+    "bart": (BartConfig, BartForConditionalGeneration, BartTokenizer)
 }
 
 
@@ -335,8 +336,6 @@ def main():
     overridden_model_configs = {} if not args.overridden_model_configs else json.loads(args.overridden_model_configs)
 
     if args.config_name:
-        import pdb
-        pdb.set_trace()
         config = config_class.from_pretrained(args.config_name, cache_dir=args.cache_dir, **overridden_model_configs)
     elif args.model_name_or_path:
         config = config_class.from_pretrained(args.model_name_or_path, cache_dir=args.cache_dir, **overridden_model_configs)
@@ -427,7 +426,7 @@ def main():
             checkpoints = [args.output_dir]
             if args.eval_all_checkpoints:
                 checkpoints = list(
-                    os.path.dirname(c) for c in
+                                        os.path.dirname(c) for c in
                     sorted(glob.glob(args.output_dir + "/**/" + WEIGHTS_NAME, recursive=True))
                 )
                 logging.getLogger("transformers.modeling_utils").setLevel(logging.WARN)  # Reduce logging
