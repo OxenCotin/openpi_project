@@ -8,7 +8,7 @@ NUM_EPOCHS=${5-20}
 MODEL_TYPE=${6-gpt2}
 BATCH_SIZE_TRAIN=${3-4}
 BATCH_SIZE_EVAL=${8-16}
-BLOCK_SIZE=${9-512}
+BLOCK_SIZE=${9-256}
 
 set -x  # print the command being executed.
 

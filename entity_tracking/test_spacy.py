@@ -7,7 +7,7 @@ import textacy.ke
 import requests
 
 from typing import Sequence, List
-# import en_core_web_sm
+import en_core_web_sm
 
 PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
 print(PATH_TO_DIRECTORY)
@@ -83,7 +83,7 @@ with open(META_FILE_PATH) as f:
 examples = zip(questions, entities)
 examples = list(examples)
 
-nlp = spacy.load("en_core_web_sm")
+nlp = en_core_web_sm.load()
 # for example in examples:
 #     doc = nlp(example)
 #     # import pdb
