@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import os
+from pathlib import Path
 
 import torch
 import sys
@@ -19,10 +20,11 @@ from transformers import (
     BartForConditionalGeneration
 )
 
-from training.gen_ans_to_list import aggregate_predictions
+from gen_ans_to_list import aggregate_predictions
 
 # to avoid "src.xxx" not found error.
 sys.path.insert(0, '..')
+home = str(Path.home())
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -40,19 +42,24 @@ MODEL_CLASSES = {
 class OpenPIGPT2Predictor:
     def __init__(self, model_path: str, stop_token: str = '<|endoftext|>'):
         self.stop_token = stop_token
-        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2')  # Fixed GPT2 tokenizer.
-        self.tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
+        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
+        self.tokenizer = BartTokenizer.from_pretrained("bart-base")
         self.tokenizer.add_special_tokens({"sep_token": "[SEP]"})
+
+        # self.model = GPT2LMHeadModel.from_pretrained(model_path)
         self.model = BartForConditionalGeneration.from_pretrained(model_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
+
+        self.model.resize_token_embeddings(len(self.tokenizer))
         self.model.eval()
         logger.info(f"Loaded model for generation.")
 
     def get_predictions(self, max_len, input_ctxt_and_query, temperature: float = 1.0,
                         top_k: int = 0,
                         top_p: float = 0.9,
-                        do_sample: bool = True,
+                        do_sample: bool = False,
                         num_return_sequences: int = 1):
         '''
         :param max_len: max number of tokens to generate overall.
@@ -69,6 +76,8 @@ class OpenPIGPT2Predictor:
                 If set to `False` greedy decoding is used. Otherwise sampling is used. Defaults to `False`.
         :return: generated next token.
         '''
+        # import pdb
+        # pdb.set_trace()
         encoded_prompt = self.tokenizer.encode(input_ctxt_and_query, add_special_tokens=False, return_tensors='pt')
         encoded_prompt = encoded_prompt.to(self.device)
         answer = self.generate_nexttokens_for_sent(max_len=max_len,
@@ -99,11 +108,13 @@ class OpenPIGPT2Predictor:
         :return: generated next token.
         '''
         answer: str = ""
+        # import pdb
+        # pdb.set_trace()
         with torch.no_grad():
             out = self.model.generate(
                 # input_ids: `torch.LongTensor` of shape `(batch_size, sequence_length)`
                 input_ids=encoded_prompt,
-                max_length=min(1024,max_len + encoded_prompt.size(-1)),
+                max_length=min(1024, max_len + encoded_prompt.size(-1)),
                 temperature=temperature,
                 top_k=top_k,
                 top_p=top_p,
@@ -165,6 +176,15 @@ def main():
     )
 
     args = parser.parse_args()
+    args.model_path = args.model_path.strip()
+    args.model_path = home + args.model_path
+
+    args.unformatted_outpath
+    args.unformatted_outpath = args.unformatted_outpath.strip()
+    args.unformatted_outpath = home + args.unformatted_outpath
+
+    args.test_input_file = args.test_input_file.strip()
+    args.test_input_file = home + args.test_input_file
 
     if not args.model_path or not os.path.exists(args.model_path):
         print(
@@ -184,13 +204,14 @@ def main():
             f"because generation output file is empty: {args.unformatted_outpath}")
         return
 
-    args.model_path = args.model_path.strip()
-    args.unformatted_outpath = args.unformatted_outpath.strip()
-    args.test_input_file = args.test_input_file.strip()
+
 
     print(f"Generation task, input = {args.test_input_file}, output = {args.unformatted_outpath} ...")
 
+    # import pdb
+    # pdb.set_trace()
     predictor = OpenPIGPT2Predictor(model_path=args.model_path, stop_token=args.stop_token)
+    predictor.model.resize_token_embeddings(len(predictor.tokenizer))
 
     test_input = []
     with open(args.test_input_file, 'r') as open_file:
@@ -198,6 +219,7 @@ def main():
             test_input.append(json.loads(line))
 
     with open(args.unformatted_outpath, 'w') as open_file:
+        # pdb.set_trace()
         for item in tqdm(test_input):
             output = predictor.get_predictions(max_len=args.max_len, input_ctxt_and_query=item['question'])
             output['id'] = item['id']

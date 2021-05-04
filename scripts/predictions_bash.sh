@@ -1,8 +1,13 @@
-TRAINED_MODEL=${1-}
-INPUT_TO_PRED_CSV=${2-}
-OUTPUT_FILEPATH_CSV=${3-}
-AGG_OUTPUT_FILEPATH_CSV=${4-}
-MAX_LEN=${5-20}
+#!/bin/bash
+
+# Loading the required module
+module load anaconda/2021a
+
+TRAINED_MODEL=${1-"/openpi_project/openpi_project/tmp/training_output/"}
+INPUT_TO_PRED_CSV=${2-"/openpi_project/openpi_project/data/formatted_for_gpt2/test.jsonl"}
+OUTPUT_FILEPATH_CSV=${3-"/openpi_project/openpi_project/tmp/eval/bart_20/out_long.csv"}
+AGG_OUTPUT_FILEPATH_CSV=${4-"/openpi_project/openpi_project/tmp/eval/bart_20/agg_long.csv"}
+MAX_LEN=${5-120}
 
 set -x  # print the command being executed.
 

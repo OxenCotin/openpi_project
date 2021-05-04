@@ -46,6 +46,7 @@ from pick_model import evaluate
 from trainer import train
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 MODEL_CLASSES = {
@@ -342,7 +343,7 @@ def main():
     else:
         config = config_class()
 
-    # special_tokens = {"sep_token": "[SEP]"}
+    special_tokens = {"sep_token": "[SEP]"}
     if args.tokenizer_name:
         tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
     elif args.model_name_or_path:

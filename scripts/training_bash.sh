@@ -1,21 +1,26 @@
+#!/bin/bash
+
+# Loading the required module
+module load anaconda/2021a
 # can increase these args as needed.
 # current args order: [model_configs_*keyvalue_csv] [learning_rate] [weight_decay]
+
 MODEL_CONFIGS=${1-}  # e.g., '{"resid_pdrop": 0.1, "attn_dropout": 0.1}'
-LR=${2-0.00002} # previously 2e-5
+LR=${2-0.00005} # previously 2e-5
 WEIGHT_DECAY=${3-0.0}
-MAX_LEN=${4-20}
+MAX_LEN=${4-100}
 NUM_EPOCHS=${5-20}
 MODEL_TYPE=${6-bart}
-BATCH_SIZE_TRAIN=${7-16}
+BATCH_SIZE_TRAIN=${7-8}
 BATCH_SIZE_EVAL=${8-16}
 BLOCK_SIZE=${9-512}
 
 set -x  # print the command being executed.
 
 python3 training/run_trainer.py \
-    --output_dir=tmp/training_output \
+    --output_dir=tmp/training_output/bart_40 \
     --model_type="$MODEL_TYPE" \
-    --model_name_or_path=gpt2 \
+    --model_name_or_path="bart-base"\
     --do_train \
     --train_data_file=data/formatted_for_gpt2/train.jsonl \
     --per_gpu_train_batch_size $BATCH_SIZE_TRAIN \
