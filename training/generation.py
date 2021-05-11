@@ -42,12 +42,12 @@ MODEL_CLASSES = {
 class OpenPIGPT2Predictor:
     def __init__(self, model_path: str, stop_token: str = '<|endoftext|>'):
         self.stop_token = stop_token
-        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
-        self.tokenizer = BartTokenizer.from_pretrained("bart-base")
+        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
+        # self.tokenizer = BartTokenizer.from_pretrained("bart-base")
         self.tokenizer.add_special_tokens({"sep_token": "[SEP]"})
 
-        # self.model = GPT2LMHeadModel.from_pretrained(model_path)
-        self.model = BartForConditionalGeneration.from_pretrained(model_path)
+        self.model = GPT2LMHeadModel.from_pretrained(model_path)
+        # self.model = BartForConditionalGeneration.from_pretrained(model_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
@@ -59,7 +59,7 @@ class OpenPIGPT2Predictor:
     def get_predictions(self, max_len, input_ctxt_and_query, temperature: float = 1.0,
                         top_k: int = 0,
                         top_p: float = 0.9,
-                        do_sample: bool = False,
+                        do_sample: bool = True,
                         num_return_sequences: int = 1):
         '''
         :param max_len: max number of tokens to generate overall.
@@ -219,7 +219,8 @@ def main():
             test_input.append(json.loads(line))
 
     with open(args.unformatted_outpath, 'w') as open_file:
-        # pdb.set_trace()
+        import pdb
+        pdb.set_trace()
         for item in tqdm(test_input):
             output = predictor.get_predictions(max_len=args.max_len, input_ctxt_and_query=item['question'])
             output['id'] = item['id']
@@ -227,7 +228,7 @@ def main():
             open_file.write('\n')
 
     formatted_fp = args.unformatted_outpath + ".formatted.jsonl" \
-        if not args.formatted_outpath else args.formatted_outpath
+        if not args.formatted_outpath else home + args.formatted_outpath.strip()
     logger.info(f"Done generating. Aggregating and formatting to {formatted_fp}")
     aggregate_predictions(prediction_fp=args.unformatted_outpath,
                           out_fp=formatted_fp)

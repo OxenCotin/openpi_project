@@ -8,7 +8,7 @@ import requests
 
 from typing import Sequence, List
 import en_core_web_sm
-from entity_selection import get_closest_entities, embed_concept_sentence
+from conceptnet_util import get_closest_entities, embed_concept_sentence
 
 PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
 print(PATH_TO_DIRECTORY)
@@ -93,6 +93,7 @@ sent3 = "Vigorously rub the sponge in a circular motion over the entire surface 
         "what happens? "
 sent2 = "the USA supported the South Vietnamese in the Vietnam war"
 sent4 = "Whisking gets rid of any streaks of yolk and whites in the final scramble"
+
 tnlp = textacy.load_spacy_lang("en_core_web_sm")
 #
 # import pdb

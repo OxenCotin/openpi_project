@@ -39,7 +39,7 @@ from transformers import (
     WEIGHTS_NAME,
     GPT2Config,
     GPT2Tokenizer,
-    GPT2LMHeadModel, PreTrainedModel, PreTrainedTokenizer, BartForConditionalGeneration, BartConfig, BartTokenizer)
+    GPT2LMHeadModel, PreTrainedModel, PreTrainedTokenizer, BartForConditionalGeneration, BartConfig, BartTokenizer, set_seed)
 
 from data_reader import load_and_cache_examples
 from pick_model import evaluate
@@ -326,7 +326,7 @@ def main():
     )
 
     # Set seed
-    # set_seed(args.seed)
+    set_seed(args.seed)
 
     # Load pretrained model and tokenizer
     if args.local_rank not in [-1, 0]:
@@ -343,7 +343,7 @@ def main():
     else:
         config = config_class()
 
-    special_tokens = {"sep_token": "[SEP]"}
+    # special_tokens = {"sep_token": "[SEP]"}
     if args.tokenizer_name:
         tokenizer = tokenizer_class.from_pretrained(args.tokenizer_name, cache_dir=args.cache_dir)
     elif args.model_name_or_path:
@@ -358,7 +358,7 @@ def main():
 
     if args.block_size <= 0:
         args.block_size = tokenizer.model_max_length
-        # Our input block size will be the max possible for the model
+        # Our input block size will be the max possible for the modelt
     else:
         args.block_size = min(args.block_size, tokenizer.model_max_length)
 
