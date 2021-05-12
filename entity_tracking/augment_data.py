@@ -2,6 +2,7 @@ import json
 import os
 from entity_augmentation import semantic_parse_entity_sentence, augment_entities_with_cpnet
 
+from tqdm import tqdm
 
 PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
 
@@ -17,7 +18,7 @@ def augment_file_basic(input_file: str, output_file: str):
     full_output_path = os.path.join(PATH_TO_DIRECTORY, output_file)
     lines = []
     with open(full_input_path, 'r') as f:
-        for line in f:
+        for line in tqdm(f):
             obj = json.loads(line)
             entities, meta_data = read_line(obj)
             obj["entities"] = entities
@@ -25,8 +26,8 @@ def augment_file_basic(input_file: str, output_file: str):
 
             lines.append(obj)
 
-    with open(full_input_path, 'w') as f:
-        json.dump(lines)
+    with open(full_output_path, 'w') as f:
+        json.dump(lines, f)
 
 
 
@@ -47,7 +48,16 @@ def read_line(line: json):
     return augmented_from_cpnet
 
 
-input = "data/formatted_for_gpt2/dev.jsonl"
-output = "data/augmented_for_openpi/dev.jsonl"
+input = "data/augmented_for_openpi/dev.jsonl"
+output = "data/augmented_for_openpi/dev_unformatted.jsonl"
 
-augment_file_basic(input, output)
+# augment_file_basic(input, output)
+
+lines = []
+with open(os.path.join(PATH_TO_DIRECTORY, input), 'r') as f:
+    lines = json.load(f)
+
+with open(os.path.join(PATH_TO_DIRECTORY, output), 'w') as f:
+    for obj in lines:
+        json.dump(obj, f)
+        f.write("\n")

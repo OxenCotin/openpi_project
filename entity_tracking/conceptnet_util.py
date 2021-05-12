@@ -61,6 +61,11 @@ def query_conceptnet(word: str, attributes: List[str] = None) -> json:
     return requests.get(CONCEPT_NET_QUERY_HEADER + word).json()
 
 
+def get_model():
+    # This sucks
+    return model
+
+
 def format_cpnet_text(text: str) -> str:
     """
 
@@ -143,7 +148,8 @@ def score_concept(similarity, embedded_context, text):
     @return:
     """
     embedding = embed_concept_sentence(text, model)
-    score = similarity(embedding, embedded_context).value
+    score = similarity(embedding, embedded_context)
+    score = score.item()
 
     return embedding, score
 

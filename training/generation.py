@@ -49,10 +49,9 @@ class OpenPIGPT2Predictor:
         self.model = GPT2LMHeadModel.from_pretrained(model_path)
         # self.model = BartForConditionalGeneration.from_pretrained(model_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
 
-        self.model.resize_token_embeddings(len(self.tokenizer))
+        # self.model.resize_token_embeddings(len(self.tokenizer))
         self.model.eval()
         logger.info(f"Loaded model for generation.")
 
@@ -207,11 +206,11 @@ def main():
 
 
     print(f"Generation task, input = {args.test_input_file}, output = {args.unformatted_outpath} ...")
-
+    #
     # import pdb
     # pdb.set_trace()
     predictor = OpenPIGPT2Predictor(model_path=args.model_path, stop_token=args.stop_token)
-    predictor.model.resize_token_embeddings(len(predictor.tokenizer))
+    # predictor.model.resize_token_embeddings(len(predictor.tokenizer))
 
     test_input = []
     with open(args.test_input_file, 'r') as open_file:
