@@ -1,4 +1,5 @@
 import json
+import os
 
 import textacy
 import spacy
@@ -116,7 +117,40 @@ def augment_entities_with_model():
 
 
 if __name__ == "__main__":
-    example1 = "Place the biscuits or cookies into a rigid, airtight container. Separate the biscuits and cookies using " \
-               "freezer paper, baking paper, or foil. Place biscuits in freezer. Thaw. Now, what happens? "
+    PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
+    print(PATH_TO_DIRECTORY)
+    META_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/gold/dev/id_answers_metadata.jsonl')
+    GPT_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/formatted_for_gpt2/dev.jsonl')
+
+    store = []
+
+    with open(GPT_FILE_PATH) as input_file:
+        i = 0
+        for line in input_file:
+            obj = json.load(line)
+            question = obj["question"]
+            parsed = semantic_parse_entity_sentence(question)
+
+            filtered_and_augmented = get_candidate_entities(question)
+            store.append({"question": question, "parsed": parsed, "filtered": filtered_and_augmented})
+            i += 1
+            if i > 20:
+                break
+
+    with open(META_FILE_PATH) as input_file:
+        i = 0
+        for line in input_file:
+            obj = json.load(line)
+            answers = obj["answer"]
+            entities = [answer["entity"] for answer in answers]
+
+            store[i]["gold"] = entities
+            i += 1
+            if i > 20:
+                break
+
+    out_file = "tmp/eval/test_entities.jsonl"
+    json.dump(store, os.path.join(PATH_TO_DIRECTORY, out_file), indent=2)
+
 
     get_candidate_entities(example1)

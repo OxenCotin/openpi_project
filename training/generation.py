@@ -42,12 +42,12 @@ MODEL_CLASSES = {
 class OpenPIGPT2Predictor:
     def __init__(self, model_path: str, stop_token: str = '<|endoftext|>'):
         self.stop_token = stop_token
-        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
-        # self.tokenizer = BartTokenizer.from_pretrained("bart-base")
+        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
+        self.tokenizer = BartTokenizer.from_pretrained("bart-base")
         self.tokenizer.add_special_tokens({"sep_token": "[SEP]"})
 
-        self.model = GPT2LMHeadModel.from_pretrained(model_path)
-        # self.model = BartForConditionalGeneration.from_pretrained(model_path)
+        # self.model = GPT2LMHeadModel.from_pretrained(model_path)
+        self.model = BartForConditionalGeneration.from_pretrained(model_path)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
@@ -218,8 +218,8 @@ def main():
             test_input.append(json.loads(line))
 
     with open(args.unformatted_outpath, 'w') as open_file:
-        import pdb
-        pdb.set_trace()
+        # import pdb
+        # pdb.set_trace()
         for item in tqdm(test_input):
             output = predictor.get_predictions(max_len=args.max_len, input_ctxt_and_query=item['question'])
             output['id'] = item['id']
