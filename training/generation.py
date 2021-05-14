@@ -48,7 +48,8 @@ class OpenPIGPT2Predictor:
 
         # self.model = GPT2LMHeadModel.from_pretrained(model_path)
         self.model = BartForConditionalGeneration.from_pretrained(model_path)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
 
         # self.model.resize_token_embeddings(len(self.tokenizer))

@@ -3,7 +3,7 @@
   <component name="WebServers">
     <option name="servers">
       <webServer id="1086455b-99ce-4e2c-9104-06988f7ba731" name="supercloud">
-        <fileTransfer rootFolder="/home/gridsan/ypei" accessType="SFTP" host="txe1-login.mit.edu" port="22" sshConfigId="8e6dd4a8-3875-459b-a989-fc18b7f32cd1" sshConfig="ypei@txe1-login.mit.edu:22 key" keyPair="true">
+        <fileTransfer rootFolder="/home/gridsan/ypei" accessType="SFTP" host="txe1-login.mit.edu" port="22" sshConfigId="c08a01dd-e682-46c8-8ff1-45aa7e9e9c11" sshConfig="ypei@txe1-login.mit.edu:22 key" keyPair="true">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
           </advancedOptions>
