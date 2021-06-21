@@ -2,8 +2,8 @@ import unittest
 
 import pytest
 
-from eval.generation_metric import ExactMetric, BLEUMetric, ROUGEMetric
-from eval.simple_eval import f1_emnlp2020
+from generation_metric import ExactMetric, BLEUMetric, ROUGEMetric
+from simple_eval import f1_emnlp2020
 
 
 class SimpleEvalTest(unittest.TestCase):

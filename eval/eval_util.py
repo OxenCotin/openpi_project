@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 from nltk import PorterStemmer
 
-from eval.spacy_stopwords import STOP_WORDS
+from spacy_stopwords import STOP_WORDS
 
 porter_stemmer = PorterStemmer()
 

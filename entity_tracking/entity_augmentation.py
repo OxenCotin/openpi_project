@@ -6,6 +6,7 @@ import spacy
 import textacy.ke
 import torch
 import numpy as np
+from sentence_transformers import SentenceTransformer
 
 from typing import List, Dict, Any, Tuple
 
@@ -15,6 +16,7 @@ tnlp = textacy.load_spacy_lang("en_core_web_sm")
 tnlp2 = textacy.load_spacy_lang("en_core_web_md")
 
 similarity_fn = torch.nn.CosineSimilarity(dim=0)
+SENTENCE_MODEL = SentenceTransformer("stsb-distilroberta-base-v2")
 
 
 def get_candidate_entities(sent: str) -> List[str]:
@@ -30,25 +32,32 @@ def get_candidate_entities(sent: str) -> List[str]:
 
     augmented = list(set(parse + augmented))
     other_filter = augmented.copy()
+    sentence_filter = augmented.copy()
 
-    similarity = create_similarity_matrix(augmented)
-    similarity_model = create_similarity_matrix_model(other_filter)
+    # similarity = create_similarity_matrix(augmented)
+    # similarity_model = create_similarity_matrix_model(other_filter)
+    similarity_sentence = create_similarity_matrix_sentence_transformers(augmented)
 
-    threshhold = .95
+    threshhold = .75
 
-    final = []
+    # final = []
+    #
+    # for i in range(len(similarity)):
+    #     for j in range(i):
+    #         if i != j and similarity[i][j] > threshhold:
+    #             augmented[j] = augmented[i]
+    #
+    # for i in range(len(similarity)):
+    #     for j in range(i):
+    #         if i != j and similarity_model[i][j] > threshhold:
+    #             other_filter[j] = other_filter[i]
 
-    for i in range(len(similarity)):
+    for i in range(len(similarity_sentence)):
         for j in range(i):
-            if i != j and similarity[i][j] > threshhold:
-                augmented[j] = augmented[i]
+            if i != j and similarity_sentence[i][j] > threshhold:
+                sentence_filter[j] = sentence_filter[i]
 
-    for i in range(len(similarity)):
-        for j in range(i):
-            if i != j and similarity_model[i][j] > threshhold:
-                other_filter[j] = other_filter[i]
-
-    return augmented, other_filter
+    return list(set(sentence_filter))
 
 
 
@@ -114,6 +123,20 @@ def create_similarity_matrix_model(entities: List[str], context: str = ""):
     return matrix
 
 
+def create_similarity_matrix_sentence_transformers(entities: List[str], context: str = ""):
+    """
+
+    @param entities: entities that we are comparing to each other
+    @param context: context in which the entities appear
+    @return: a similarity matrix of the entities (in context?)
+    """
+
+    matrix = np.zeros((len(entities), len(entities)))
+    for i, ent in enumerate(entities):
+        for j in range(i+1):
+            matrix[i, j] = calculate_similarity_sentence_transformers(ent, entities[j])
+    return matrix
+
 def calculate_similarity_bert(entity_1: str, entity_2: str) -> float:
     """
 
@@ -136,48 +159,56 @@ def calculate_similarity_spacy(entity1: str, entity2: str):
     return tokens1.similarity(tokens2)
 
 
+def calculate_similarity_sentence_transformers(entity1: str, entity2: str):
+    embedding1 = torch.tensor(SENTENCE_MODEL.encode(entity1))
+    embedding2 = torch.tensor(SENTENCE_MODEL.encode(entity2))
+
+    return similarity_fn(embedding1, embedding2)
+
 def augment_entities_with_model():
     # TODO: Make more sophisticated entity prediction
     pass
 
 
 if __name__ == "__main__":
-    PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
-    # print(PATH_TO_DIRECTORY)
-    META_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/gold/dev/id_answers_metadata.jsonl')
-    GPT_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/formatted_for_gpt2/dev.jsonl')
+    # test = ["a car", "a town", "the stereos", "the car", "car", "stereo", "a state", "A tire", "A car", "An engine ", "A volvo", "Michigan", "Georgia", "California", "Maine", "New York", "Oregon", "texas", "Utah", "Colorado", "South Dakota", "New Mexico", "Massachusetts", "Arkansas", "Vermont", "Rhode Island"]
 
-    store = []
-
-    with open(GPT_FILE_PATH) as input_file:
-        i = 0
-        for line in input_file:
-            obj = json.loads(line)
-            question = obj["question"]
-            parsed = semantic_parse_entity_sentence(question)
-
-            filtered_spacy, filter_bert = get_candidate_entities(question)
-            store.append({"question": question, "parsed": parsed, "filtered_spacy": filtered_spacy, "filtered_bert": filter_bert})
-            i += 1
-            if i > 15:
-                break
-
-    with open(META_FILE_PATH) as input_file:
-        i = 0
-        for line in input_file:
-            obj = json.loads(line)
-            answers = obj["answers_metadata"]
-            entities = [answer["entity"] for answer in answers]
-
-            store[i]["gold"] = entities
-            i += 1
-            if i > 15:
-                break
-
-    out_file = "tmp/eval/test_entities.csv"
-
-    with open(os.path.join(PATH_TO_DIRECTORY, out_file), 'w') as f:
-        json.dump(store, f, indent=2)
-
-
+    # PATH_TO_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
+    # # print(PATH_TO_DIRECTORY)
+    # META_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/gold/dev/id_answers_metadata.jsonl')
+    # GPT_FILE_PATH = os.path.join(PATH_TO_DIRECTORY, 'data/formatted_for_gpt2/dev.jsonl')
+    #
+    # store = []
+    #
+    # with open(GPT_FILE_PATH) as input_file:
+    #     i = 0
+    #     for line in input_file:
+    #         obj = json.loads(line)
+    #         question = obj["question"]
+    #         parsed = semantic_parse_entity_sentence(question)
+    #
+    #         filtered_spacy, filter_bert = get_candidate_entities(question)
+    #         store.append({"question": question, "parsed": parsed, "filtered_spacy": filtered_spacy, "filtered_bert": filter_bert})
+    #         i += 1
+    #         if i > 15:
+    #             break
+    #
+    # with open(META_FILE_PATH) as input_file:
+    #     i = 0
+    #     for line in input_file:
+    #         obj = json.loads(line)
+    #         answers = obj["answers_metadata"]
+    #         entities = [answer["entity"] for answer in answers]
+    #
+    #         store[i]["gold"] = entities
+    #         i += 1
+    #         if i > 15:
+    #             break
+    #
+    # out_file = "tmp/eval/test_entities.csv"
+    #
+    # with open(os.path.join(PATH_TO_DIRECTORY, out_file), 'w') as f:
+    #     json.dump(store, f, indent=2)
+    #
+    #
     get_candidate_entities(example1)

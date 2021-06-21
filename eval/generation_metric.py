@@ -3,9 +3,9 @@
 import re
 import string
 
-from eval.eval_metric.bleu.bleu import Bleu
-from eval.eval_metric.rouge.rouge import Rouge
-from eval.eval_util import normalize_and_stem
+from eval_metric.bleu.bleu import Bleu
+from eval_metric.rouge.rouge import Rouge
+from eval_util import normalize_and_stem
 
 
 class GenerationMetric:

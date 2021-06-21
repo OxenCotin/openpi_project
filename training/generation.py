@@ -21,6 +21,7 @@ from transformers import (
 )
 
 from gen_ans_to_list import aggregate_predictions
+from data_reader import format_cpnet_knowledge
 
 # to avoid "src.xxx" not found error.
 sys.path.insert(0, '..')
@@ -42,14 +43,14 @@ MODEL_CLASSES = {
 class OpenPIGPT2Predictor:
     def __init__(self, model_path: str, stop_token: str = '<|endoftext|>'):
         self.stop_token = stop_token
-        # self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
-        self.tokenizer = BartTokenizer.from_pretrained("bart-base")
+        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2-dl')  # Fixed GPT2 tokenizer.
+        # self.tokenizer = BartTokenizer.from_pretrained("bart-base")
         self.tokenizer.add_special_tokens({"sep_token": "[SEP]"})
 
-        # self.model = GPT2LMHeadModel.from_pretrained(model_path)
-        self.model = BartForConditionalGeneration.from_pretrained(model_path)
-        # self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = torch.device("cpu")
+        self.model = GPT2LMHeadModel.from_pretrained(model_path)
+        # self.model = BartForConditionalGeneration.from_pretrained(model_path)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cpu")
         self.model = self.model.to(self.device)
 
         # self.model.resize_token_embeddings(len(self.tokenizer))
@@ -208,8 +209,7 @@ def main():
 
     print(f"Generation task, input = {args.test_input_file}, output = {args.unformatted_outpath} ...")
     #
-    # import pdb
-    # pdb.set_trace()
+
     predictor = OpenPIGPT2Predictor(model_path=args.model_path, stop_token=args.stop_token)
     # predictor.model.resize_token_embeddings(len(predictor.tokenizer))
 
@@ -222,12 +222,12 @@ def main():
         # import pdb
         # pdb.set_trace()
         for item in tqdm(test_input):
-            output = predictor.get_predictions(max_len=args.max_len, input_ctxt_and_query=item['question'])
+            output = predictor.get_predictions(max_len=args.max_len, input_ctxt_and_query=format_cpnet_knowledge(item) + item['question'])
             output['id'] = item['id']
             json.dump(output, open_file)
             open_file.write('\n')
 
-    formatted_fp = args.unformatted_outpath + ".formatted.jsonl" \
+    formatted_fp = home + args.unformatted_outpath + ".formatted.jsonl" \
         if not args.formatted_outpath else home + args.formatted_outpath.strip()
     logger.info(f"Done generating. Aggregating and formatting to {formatted_fp}")
     aggregate_predictions(prediction_fp=args.unformatted_outpath,
@@ -235,4 +235,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # formatted_fp = home + "/openpi_project/openpi_project/tmp/eval/gpt2_20_sample/out_long" + ".formatted.jsonl"
+    # unformatted_outpath = home + "/openpi_project/openpi_project/tmp/eval/gpt2_20_sample/out_long.csv"
+    # logger.info(f"Done generating. Aggregating and formatting to {formatted_fp}")
+    # aggregate_predictions(prediction_fp=unformatted_outpath,
+    #                       out_fp=formatted_fp)
     main()

@@ -8,8 +8,20 @@ from torch.utils.data import Dataset
 logger = logging.getLogger(__name__)
 
 
+def format_cpnet_knowledge(input_json: dict) -> str:
+    """
+
+    @param input_json: dictionary representing one datapoint in the openpi dataset
+    @return: knowledge from conceptnet formatted as a string
+    """
+    knowledge = input_json["knowledge"]
+    knowledge = knowledge if len(knowledge) <= 10 else knowledge[:10]
+
+    return ". ".join(knowledge)
+
+
 class OpenPIDataset(Dataset):
-    def __init__(self, tokenizer, file_path='train', block_size=512, skip_answer=False, cache_dir=None):
+    def __init__(self, tokenizer, file_path='train', block_size=512, skip_answer=False, cache_dir=None, cpnet_augment=False):
         assert os.path.isfile(file_path)
         directory, filename = os.path.split(file_path)
         if cache_dir is None:
@@ -33,7 +45,8 @@ class OpenPIDataset(Dataset):
                     token_ids, token_labels, one_metadata = OpenPIDataset.read_line(input_json=input_json,
                                                                                     tokenizer=tokenizer,
                                                                                     block_size=block_size,
-                                                                                    skip_answer=skip_answer)
+                                                                                    skip_answer=skip_answer,
+                                                                                    use_cpnet_augment=cpnet_augment)
 
                     self.examples.append((token_ids, token_labels, one_metadata))
                     self.metadata.append(one_metadata)
@@ -77,9 +90,13 @@ class OpenPIDataset(Dataset):
         return self.metadata[item_idx]['id']
 
     @staticmethod
-    def read_line(input_json, tokenizer, block_size, skip_answer, stop_token='<|endoftext|>'):
+    def read_line(input_json, tokenizer, block_size, skip_answer, stop_token='<|endoftext|>', use_cpnet_augment=False):
         metadata = {}
-        tokenized_question = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(input_json['question']))
+
+        injected_knowledge = format_cpnet_knowledge(input_json)
+        query = input_json['question'] + "[SEP]" + injected_knowledge
+        tokenized_question = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(query))
+
         if not skip_answer:
             if 'answer' not in input_json or input_json['answer'] == '':
                 tokenized_answer = []

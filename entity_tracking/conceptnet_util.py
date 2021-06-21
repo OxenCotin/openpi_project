@@ -58,7 +58,11 @@ logger.info(f"Loaded BERT tokenizer")
 
 
 def query_conceptnet(word: str, attributes: List[str] = None) -> json:
-    return requests.get(CONCEPT_NET_QUERY_HEADER + word).json()
+    request = requests.get(CONCEPT_NET_QUERY_HEADER + word)
+    try:
+        return request.json()
+    except ValueError:
+        return {}
 
 
 def get_model():
@@ -106,7 +110,7 @@ def get_closest_entities(entities: List[str], context: str, max_entities: int = 
     # import pdb
     # pdb.set_trace()
     for entity in entities:
-        triples = query_conceptnet(format_cpnet_query(entity))['edges']
+        triples = query_conceptnet(format_cpnet_query(entity)).get('edges', [])
         embedded_context = embed_concept_sentence(context).view(-1)
 
         entity_dict[entity] = []
@@ -195,8 +199,10 @@ def bert_text_preparation(text: str, tokenizer: BertTokenizer):
 def json_to_text(trip: json):
     pass
 
+invalid = requests.get(CONCEPT_NET_QUERY_HEADER + "whatin_tarnation")
+test = invalid.json()
 
-sentence = "Knife is a tool"
-embedded = embed_concept_sentence(sentence, model)
+# sentence = "Knife is a tool"
+# embedded = embed_concept_sentence(sentence, model)
 
 # print(embedded)

@@ -6,11 +6,11 @@ module load anaconda/2021a
 # current args order: [model_configs_*keyvalue_csv] [learning_rate] [weight_decay]
 
 MODEL_CONFIGS=${1-}  # e.g., '{"resid_pdrop": 0.1, "attn_dropout": 0.1}'
-LR=${2-0.00005} # previously 2e-5
+LR=${2-0.00002} # previously 2e-5
 WEIGHT_DECAY=${3-0.0}
 MAX_LEN=${4-80}
 NUM_EPOCHS=${5-20}
-MODEL_TYPE=${6-bart}
+MODEL_TYPE=${6-gpt2}
 BATCH_SIZE_TRAIN=${7-8}
 BATCH_SIZE_EVAL=${8-16}
 BLOCK_SIZE=${9-512}
@@ -18,11 +18,11 @@ BLOCK_SIZE=${9-512}
 set -x  # print the command being executed.
 
 python3 training/run_trainer.py \
-    --output_dir=tmp/training_output/gpt2_20 \
+    --output_dir=tmp/training_output/gpt2_augmented_20_extra \
     --model_type="$MODEL_TYPE" \
-    --model_name_or_path="gpt2_dl"\
+    --model_name_or_path="tmp/training_output/gpt2_augmented"\
     --do_train \
-    --train_data_file=data/formatted_for_gpt2/train.jsonl \
+    --train_data_file=data/augmented_for_openpi/train_formatted.jsonl \
     --per_gpu_train_batch_size $BATCH_SIZE_TRAIN \
     --per_gpu_eval_batch_size $BATCH_SIZE_EVAL \
     --overwrite_output_dir \
@@ -33,4 +33,6 @@ python3 training/run_trainer.py \
     --learning_rate $LR \
     --overridden_model_configs "$MODEL_CONFIGS" \
     --weight_decay $WEIGHT_DECAY \
-    --num_train_epochs $NUM_EPOCHS
+    --num_train_epochs $NUM_EPOCHS \
+    --fp16
+

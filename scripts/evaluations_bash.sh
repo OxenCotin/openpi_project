@@ -1,5 +1,5 @@
-GOLD_CSV=${1-}
-PRED_CSV=${2-}
+GOLD_CSV=${1-"data/gold/test/id_answers.jsonl"}
+PRED_CSV=${2-"tmp/eval/gpt2_augmented_with_sep/out.csv"}
 PREFIX_NAME_CSV=${3-}
 ONE_METRICSJSON=${4-}
 
